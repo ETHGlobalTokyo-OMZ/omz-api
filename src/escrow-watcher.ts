@@ -1,5 +1,8 @@
 import mongoose from 'mongoose';
 import cron from 'node-cron';
+import {
+    ChainIDEnums, ContractType, getContractByContractType
+} from 'omz-module';
 import Web3 from 'web3';
 import { AbiItem } from 'web3-utils';
 
@@ -7,21 +10,27 @@ import sellerABI from './abis/seller.abi.json';
 import { defineCollection } from './db';
 import { IMongoCollection } from './db/collection';
 
-export class EventWatcher {
-    private ListSellEventName = "ListSell";
+export class EscrowWatcher {
+    private EscrowCreateEventName = "Escrow_Create";
 
     private db: {
         connection: mongoose.Connection
         collection: IMongoCollection,
     };
-    private chainID;
+    private chainID: ChainIDEnums.ORDER_FACTORY; // Polygon
     private web3;
-    private sellerContract
+    private orderFactoryContract;
 
     constructor() { }
 
-    public async init(chainID: number, sellerAddress: string): Promise<void> {
-        this.chainID = chainID;
+    public async init(): Promise<void> {
+        const orderFactory = getContractByContractType(this.chainID, ContractType.ORDER_FACTORY);
+
+        if (!orderFactory) {
+            console.log("orderFactory is null");
+            return;
+        }
+
         this.db = await defineCollection();
 
         const syncedBlock = await this.db.collection.blockSync.findOne({
@@ -33,7 +42,7 @@ export class EventWatcher {
         }
 
         this.web3 = new Web3(syncedBlock.nodeURI);
-        this.sellerContract = new this.web3.eth.Contract(sellerABI as AbiItem[], sellerAddress);
+        this.orderFactoryContract = new this.web3.eth.Contract(sellerABI as AbiItem[], orderFactory.address);
     }
 
     public async run(): Promise<void> {
@@ -72,7 +81,7 @@ export class EventWatcher {
             console.log(`Sync Block ${fromBlock} ~ ${toBlock}`);
 
             // event catch
-            await this.getListSell(fromBlock, toBlock);
+            await this.getEscrowCreateEvent(fromBlock, toBlock);
 
             await this.db.collection.blockSync.findOneAndUpdate(
                 { chainID: this.chainID },
@@ -81,8 +90,8 @@ export class EventWatcher {
         }
     }
 
-    private async getListSell(fromBlock, toBlock) {
-        const pastEvents = await this.sellerContract.getPastEvents(this.ListSellEventName, {
+    private async getEscrowCreateEvent(fromBlock, toBlock) {
+        const pastEvents = await this.orderFactoryContract.getPastEvents(this.EscrowCreateEventName, {
             fromBlock: fromBlock,
             toBlock: toBlock
         });
@@ -100,47 +109,11 @@ export class EventWatcher {
                 continue;
             }
 
-            // past Event insert in db
-            const newOTC = new db.collection.otc({
-                seller: eventValue.order[0],
-                sellTokenName: "native",
-                sellTokenAddress: "0x0000000000000000000000000000000000000000",
-                sellTokenAmount: eventValue.order[2],
-                price: eventValue.order[1],
-                collateralTokenAddress: "0x0000000000000000000000000000000000000000",
-                collateralTokenAmount: eventValue.order[3],
-                listingTimestamp: eventValue.order[4],
-                status: 0
-            });
-
-            await newOTC.save();
+            console.log(eventValue);
+            // merge exist otc
         }
 
-        // Result {
-        //     seller: '0xF44A53ac17779f27ae9Fc4B352Db4157aDE7a35C',
-        //     chainId: '0',
-        //     nonce: '1',
-        //     order: [
-        //       '0xF44A53ac17779f27ae9Fc4B352Db4157aDE7a35C',
-        //       '1000000000000000000',
-        //       '1000000000000000000',
-        //       '100000000',
-        //       '1681474815',
-        //       to: '0xF44A53ac17779f27ae9Fc4B352Db4157aDE7a35C',
-        //       bob_amount: '1000000000000000000',
-        //       native_amount: '1000000000000000000',
-        //       collateral_amount: '100000000',
-        //       time_lock_start: '1681474815'
-        //     ],
-        //     sig: [
-        //       '27',
-        //       '0xcf8e2fdfd44b98e3be93e195f8457de347eda293a9e9f2869225263172d5bc3d',
-        //       '0x7654cc9759f17b2d0f38597e5dc2668e0cd912d53154d31a42c56cee82e3c0d9',
-        //       v: '27',
-        //       r: '0xcf8e2fdfd44b98e3be93e195f8457de347eda293a9e9f2869225263172d5bc3d',
-        //       s: '0x7654cc9759f17b2d0f38597e5dc2668e0cd912d53154d31a42c56cee82e3c0d9'
-        //     ]
-        //   }
+        db;
     }
 
 }

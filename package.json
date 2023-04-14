@@ -18,7 +18,7 @@
     "config": "^3.3.9",
     "mongoose": "^7.0.3",
     "node-cron": "^3.0.2",
-    "omz-module": "^1.0.2",
+    "omz-module": "^1.0.8",
     "reflect-metadata": "^0.1.13",
     "rxjs": "^7.2.0",
     "web3": "^1.9.0"
