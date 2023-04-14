@@ -1,3 +1,4 @@
+import config, { IConfig } from 'config';
 import mongoose from 'mongoose';
 import cron from 'node-cron';
 import {
@@ -6,9 +7,14 @@ import {
 import Web3 from 'web3';
 import { AbiItem } from 'web3-utils';
 
+import * as PushAPI from '@pushprotocol/restapi';
+import { ENV } from '@pushprotocol/restapi/src/lib/constants';
+
 import sellerABI from './abis/seller.abi.json';
 import { defineCollection } from './db';
 import { IMongoCollection } from './db/collection';
+
+const ethers = require('ethers');
 
 export class SellerWatcher {
     private ListSellEventName = "ListSell";
@@ -20,6 +26,8 @@ export class SellerWatcher {
     private chainID: ChainIDEnums;
     private web3;
     private sellerContract
+
+    private pushOwner;
 
     constructor() { }
 
@@ -42,6 +50,9 @@ export class SellerWatcher {
 
         this.web3 = new Web3(syncedBlock.nodeURI);
         this.sellerContract = new this.web3.eth.Contract(sellerABI as AbiItem[], sellerContract.address);
+
+        const pushConfig = config.get<IConfig>('Push');
+        this.pushOwner = new ethers.Wallet(pushConfig.get('pk'));
     }
 
     public async run(): Promise<void> {
@@ -141,6 +152,39 @@ export class SellerWatcher {
                 collateralTokenAmount: eventValue.order[5] / 10 ** collateralToken.decimal,
                 listingTimestamp: eventValue.order[6],
                 status: 0
+            });
+
+            await PushAPI.payloads.sendNotification({
+                senderType: 0,
+                signer: this.pushOwner,
+                type: 1, // broadcast
+                identityType: 2, // direct payload
+                notification: {
+                    title: `New Listing ${newOTC.sellTokenName}`,
+                    body:
+                        `
+                    Token: ${newOTC.sellTokenName}\n
+                    Token Amount: ${newOTC.sellTokenAmount}\n
+                    Price: ${newOTC.price}\n\n
+                    Collateral Token: ${newOTC.collateralTokenName}\n
+                    Collateral Amount: ${newOTC.collateralTokenAmount}
+                    `
+                },
+                payload: {
+                    title: `New Listing ${newOTC.sellTokenName}`,
+                    body:
+                        `
+                    Token: ${newOTC.sellTokenName}\n
+                    Token Amount: ${newOTC.sellTokenAmount}\n
+                    Price: ${newOTC.price}\n\n
+                    Collateral Token: ${newOTC.collateralTokenName}\n
+                    Collateral Amount: ${newOTC.collateralTokenAmount}
+                    `,
+                    cta: '',
+                    img: ''
+                },
+                channel: 'eip155:5:0x966c2443cebcC21A94047e2cF4Ff6DB1fCa897fE', // your channel address
+                env: ENV.STAGING
             });
 
             await newOTC.save();
