@@ -5,14 +5,17 @@ import {
 import { NestFactory } from '@nestjs/core';
 
 import { AppModule } from './app.module';
-import { defineCollection } from './db';
-import { EventWatcher } from './event-watcher';
+import { EscrowWatcher } from './escrow-watcher';
+import { SellerWatcher } from './seller-watcher';
 
 async function bootstrap() {
-  await defineCollection();
-  const watcher = new EventWatcher();
-  await watcher.init(ChainIDEnums.GOERLI, getContractByContractType(ChainIDEnums.GOERLI, ContractType.SELLER_VAULT))
+  const watcher = new SellerWatcher();
+  await watcher.init(ChainIDEnums.MUMBAI, getContractByContractType(ChainIDEnums.MUMBAI, ContractType.SELLER_VAULT))
   watcher.run();
+
+  const escrow = new EscrowWatcher();
+  await escrow.init();
+  escrow.run();
 
   const app = await NestFactory.create(AppModule);
   await app.listen(3000);

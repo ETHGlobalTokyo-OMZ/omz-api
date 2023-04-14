@@ -15,6 +15,12 @@
         "inputs": [
             {
                 "indexed": false,
+                "internalType": "bytes32",
+                "name": "tradeID",
+                "type": "bytes32"
+            },
+            {
+                "indexed": false,
                 "internalType": "address",
                 "name": "escrow",
                 "type": "address"
@@ -75,7 +81,7 @@
                 "type": "tuple"
             }
         ],
-        "name": "EscrowCreate",
+        "name": "Escrow_Create",
         "type": "event"
     },
     {

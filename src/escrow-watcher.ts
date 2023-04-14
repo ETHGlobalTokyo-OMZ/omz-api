@@ -6,7 +6,7 @@ import {
 import Web3 from 'web3';
 import { AbiItem } from 'web3-utils';
 
-import sellerABI from './abis/seller.abi.json';
+import orderFactoryABI from './abis/order-factory.abi.json';
 import { defineCollection } from './db';
 import { IMongoCollection } from './db/collection';
 
@@ -17,14 +17,14 @@ export class EscrowWatcher {
         connection: mongoose.Connection
         collection: IMongoCollection,
     };
-    private chainID: ChainIDEnums.ORDER_FACTORY; // Polygon
+    private chainID: ChainIDEnums = ChainIDEnums.ORDER_FACTORY; // Polygon
     private web3;
     private orderFactoryContract;
 
     constructor() { }
 
     public async init(): Promise<void> {
-        const orderFactory = getContractByContractType(this.chainID, ContractType.ORDER_FACTORY);
+        const orderFactory = getContractByContractType(0, ContractType.ORDER_FACTORY);
 
         if (!orderFactory) {
             console.log("orderFactory is null");
@@ -42,7 +42,7 @@ export class EscrowWatcher {
         }
 
         this.web3 = new Web3(syncedBlock.nodeURI);
-        this.orderFactoryContract = new this.web3.eth.Contract(sellerABI as AbiItem[], orderFactory.address);
+        this.orderFactoryContract = new this.web3.eth.Contract(orderFactoryABI as AbiItem[], orderFactory.address);
     }
 
     public async run(): Promise<void> {
@@ -58,6 +58,7 @@ export class EscrowWatcher {
     private async getEvents() {
         const latestBlockNumber = await this.web3.eth.getBlockNumber();
 
+        console.log(latestBlockNumber);
         const syncedBlock = await this.db.collection.blockSync.findOne({
             chainID: this.chainID
         });
@@ -78,7 +79,7 @@ export class EscrowWatcher {
                 toBlock = latestBlockNumber;
             }
 
-            console.log(`Sync Block ${fromBlock} ~ ${toBlock}`);
+            console.log(`Escrow Sync Block ${fromBlock} ~ ${toBlock}`);
 
             // event catch
             await this.getEscrowCreateEvent(fromBlock, toBlock);
@@ -109,11 +110,12 @@ export class EscrowWatcher {
                 continue;
             }
 
-            console.log(eventValue);
             // merge exist otc
+            await db.collection.otc.findOneAndUpdate(
+                { id: eventValue.tradeID },
+                { escrowContractAddress: eventValue.escrow }
+            );
         }
-
-        db;
     }
 
 }

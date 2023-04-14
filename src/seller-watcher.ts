@@ -10,7 +10,7 @@ import sellerABI from './abis/seller.abi.json';
 import { defineCollection } from './db';
 import { IMongoCollection } from './db/collection';
 
-export class EventWatcher {
+export class SellerWatcher {
     private ListSellEventName = "ListSell";
 
     private db: {
@@ -77,7 +77,7 @@ export class EventWatcher {
                 toBlock = latestBlockNumber;
             }
 
-            console.log(`Sync Block ${fromBlock} ~ ${toBlock}`);
+            console.log(`Seller Sync Block ${fromBlock} ~ ${toBlock}`);
 
             // event catch
             await this.getListSell(fromBlock, toBlock);
@@ -107,61 +107,44 @@ export class EventWatcher {
             if (!eventValue) {
                 continue;
             }
+            console.log(eventValue);
 
             // past Event insert in db
-            const sellToken = getContractByContractAddress(this.chainID, eventValue.order[5]);
+            const sellToken = getContractByContractAddress(this.chainID, eventValue.order[2]);
             if (!sellToken) {
                 console.log('sell token is null');
                 return;
+            } else if (!sellToken.decimal) {
+                console.log('sell token decimal null');
+                return;
             }
 
-            const collateralToken = getContractByContractAddress(this.chainID, eventValue.order[6]);
+            const collateralToken = getContractByContractAddress(this.chainID, eventValue.order[4]);
             if (!collateralToken) {
                 console.log('collateral token is null');
+                return;
+            } else if (!collateralToken.decimal) {
+                console.log('collateral token decimal null');
                 return;
             }
 
             const newOTC = new db.collection.otc({
+                id: eventValue.tradeID,
+                chainID: this.chainID,
                 seller: eventValue.order[0],
                 sellTokenName: sellToken.tokenName,
-                sellTokenAddress: "0x0000000000000000000000000000000000000000",
-                sellTokenAmount: eventValue.order[2],
-                price: eventValue.order[1],
+                sellTokenAddress: sellToken.address,
+                sellTokenAmount: eventValue.order[3] / 10 ** sellToken.decimal,
+                price: eventValue.order[1] / 10 ** 18,
                 collateralTokenName: collateralToken.tokenName,
-                collateralTokenAddress: "0x0000000000000000000000000000000000000000",
-                collateralTokenAmount: eventValue.order[3],
-                listingTimestamp: eventValue.order[4],
+                collateralTokenAddress: collateralToken.address,
+                collateralTokenAmount: eventValue.order[5] / 10 ** collateralToken.decimal,
+                listingTimestamp: eventValue.order[6],
                 status: 0
             });
 
             await newOTC.save();
         }
-
-        // Result {
-        //     seller: '0xF44A53ac17779f27ae9Fc4B352Db4157aDE7a35C',
-        //     chainId: '0',
-        //     nonce: '1',
-        //     order: [
-        //       '0xF44A53ac17779f27ae9Fc4B352Db4157aDE7a35C',
-        //       '1000000000000000000',
-        //       '1000000000000000000',
-        //       '100000000',
-        //       '1681474815',
-        //       to: '0xF44A53ac17779f27ae9Fc4B352Db4157aDE7a35C',
-        //       bob_amount: '1000000000000000000',
-        //       native_amount: '1000000000000000000',
-        //       collateral_amount: '100000000',
-        //       time_lock_start: '1681474815'
-        //     ],
-        //     sig: [
-        //       '27',
-        //       '0xcf8e2fdfd44b98e3be93e195f8457de347eda293a9e9f2869225263172d5bc3d',
-        //       '0x7654cc9759f17b2d0f38597e5dc2668e0cd912d53154d31a42c56cee82e3c0d9',
-        //       v: '27',
-        //       r: '0xcf8e2fdfd44b98e3be93e195f8457de347eda293a9e9f2869225263172d5bc3d',
-        //       s: '0x7654cc9759f17b2d0f38597e5dc2668e0cd912d53154d31a42c56cee82e3c0d9'
-        //     ]
-        //   }
     }
 
 }
