@@ -21,6 +21,7 @@
     "ethers": "^5.7.2",
     "mongoose": "^7.0.3",
     "node-cron": "^3.0.2",
+    "nodemon": "^2.0.22",
     "omz-module": "^1.0.10",
     "reflect-metadata": "^0.1.13",
     "rxjs": "^7.2.0",
