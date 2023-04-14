@@ -11,10 +11,9 @@ export class OtcService {
         const resDTO = new GetOTCListResDTO(HttpStatus.OK);
 
         let findObj = {}
-        reqDTO.tokenName === null ? findObj : findObj = { tokenName: reqDTO.tokenName };
+        reqDTO.tokenName === '' ? findObj : findObj = { sellTokenName: reqDTO.tokenName };
 
-        const offset = reqDTO.index * reqDTO.limit;
-        const otcList = await db.collection.otc.find(findObj).skip(offset).limit(reqDTO.limit);
+        const otcList = await db.collection.otc.find(findObj);
 
         resDTO.lists = otcList;
 

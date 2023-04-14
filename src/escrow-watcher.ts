@@ -58,7 +58,6 @@ export class EscrowWatcher {
     private async getEvents() {
         const latestBlockNumber = await this.web3.eth.getBlockNumber();
 
-        console.log(latestBlockNumber);
         const syncedBlock = await this.db.collection.blockSync.findOne({
             chainID: this.chainID
         });
