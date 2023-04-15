@@ -352,6 +352,16 @@ export class Watcher {
                 continue;
             }
 
+            await db.collection.otc.findOneAndUpdate(
+                {
+                    seller: eventValue.seller,
+                    sellerNonce: eventValue.nonce
+                },
+                {
+                    status: OrderEnums.SUCCESS
+                }
+            );
+
             // push protocol to seller
             await PushAPI.payloads.sendNotification({
                 senderType: 0,
