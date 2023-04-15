@@ -143,6 +143,7 @@ export class SellerWatcher {
                 tradeID: eventValue.tradeID,
                 chainID: this.chainID,
                 seller: eventValue.order[0],
+                sellerNonce: eventValue.nonce,
                 sellTokenName: sellToken.tokenName,
                 sellTokenAddress: sellToken.address,
                 sellTokenAmount: eventValue.order[3] / 10 ** sellToken.decimal,
