@@ -3,6 +3,10 @@ import { IsOptional, IsString } from 'class-validator';
 class GetOTCListReqDTO {
     @IsOptional()
     @IsString()
+    readonly _id: string = "";
+
+    @IsOptional()
+    @IsString()
     readonly tokenName: string = "";
 
     @IsOptional()

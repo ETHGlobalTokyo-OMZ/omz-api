@@ -339,8 +339,6 @@ export class Watcher {
         for (const pastEvent of pastEvents) {
             const eventValue = pastEvent.returnValues;
 
-            console.log(eventValue);
-
             if (!eventValue) {
                 continue;
             }
@@ -353,8 +351,6 @@ export class Watcher {
             if (!otc) {
                 continue;
             }
-
-            console.log(otc.buyer);
 
             // push protocol to seller
             await PushAPI.payloads.sendNotification({

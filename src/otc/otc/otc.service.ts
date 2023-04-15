@@ -4,6 +4,8 @@ import { defineCollection } from '../../db';
 import { GetOTCListReqDTO } from '../dto/request/get-list.request.dto';
 import { GetOTCListResDTO } from '../dto/response/get-list.response.dto';
 
+var mongoose = require('mongoose');
+
 @Injectable()
 export class OtcService {
     public async getOTCList(reqDTO: GetOTCListReqDTO): Promise<GetOTCListResDTO> {
@@ -11,6 +13,7 @@ export class OtcService {
         const resDTO = new GetOTCListResDTO(HttpStatus.OK);
 
         let matchObj: Object = {};
+        reqDTO._id === '' ? matchObj : matchObj['_id'] = new mongoose.Types.ObjectId(reqDTO._id)
         reqDTO.tokenName === '' ? matchObj : matchObj['sellTokenName'] = reqDTO.tokenName;
         reqDTO.seller === '' ? matchObj : matchObj['seller'] = reqDTO.seller;
         reqDTO.buyer === '' ? matchObj : matchObj['buyer'] = reqDTO.buyer;
