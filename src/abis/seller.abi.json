@@ -5,10 +5,28 @@
                 "internalType": "uint256",
                 "name": "_chainId",
                 "type": "uint256"
+            },
+            {
+                "internalType": "address",
+                "name": "_orderFactoryAddr",
+                "type": "address"
             }
         ],
         "stateMutability": "nonpayable",
         "type": "constructor"
+    },
+    {
+        "anonymous": false,
+        "inputs": [
+            {
+                "indexed": false,
+                "internalType": "bytes32",
+                "name": "mailID",
+                "type": "bytes32"
+            }
+        ],
+        "name": "HyperlaneRelay",
+        "type": "event"
     },
     {
         "anonymous": false,
@@ -102,6 +120,12 @@
                 "internalType": "struct Types.Sig",
                 "name": "sig",
                 "type": "tuple"
+            },
+            {
+                "indexed": false,
+                "internalType": "bytes32",
+                "name": "mailID",
+                "type": "bytes32"
             }
         ],
         "name": "ListSell",
@@ -193,6 +217,12 @@
                 "internalType": "struct Types.Sig",
                 "name": "sig",
                 "type": "tuple"
+            },
+            {
+                "indexed": false,
+                "internalType": "bytes32",
+                "name": "mailID",
+                "type": "bytes32"
             }
         ],
         "name": "ResolveSell",
@@ -206,6 +236,25 @@
                 "internalType": "uint256",
                 "name": "",
                 "type": "uint256"
+            }
+        ],
+        "stateMutability": "view",
+        "type": "function"
+    },
+    {
+        "inputs": [
+            {
+                "internalType": "uint256",
+                "name": "",
+                "type": "uint256"
+            }
+        ],
+        "name": "chainIds",
+        "outputs": [
+            {
+                "internalType": "uint32",
+                "name": "",
+                "type": "uint32"
             }
         ],
         "stateMutability": "view",
@@ -383,6 +432,38 @@
     {
         "inputs": [
             {
+                "internalType": "uint32",
+                "name": "",
+                "type": "uint32"
+            }
+        ],
+        "name": "oracleFactorys",
+        "outputs": [
+            {
+                "internalType": "address",
+                "name": "",
+                "type": "address"
+            }
+        ],
+        "stateMutability": "view",
+        "type": "function"
+    },
+    {
+        "inputs": [],
+        "name": "orderFactoryAddr",
+        "outputs": [
+            {
+                "internalType": "address",
+                "name": "",
+                "type": "address"
+            }
+        ],
+        "stateMutability": "view",
+        "type": "function"
+    },
+    {
+        "inputs": [
+            {
                 "internalType": "address",
                 "name": "",
                 "type": "address"
@@ -523,6 +604,19 @@
         "type": "function"
     },
     {
+        "inputs": [],
+        "name": "owner",
+        "outputs": [
+            {
+                "internalType": "address",
+                "name": "",
+                "type": "address"
+            }
+        ],
+        "stateMutability": "view",
+        "type": "function"
+    },
+    {
         "inputs": [
             {
                 "internalType": "uint256",
@@ -550,11 +644,47 @@
                 "internalType": "struct Types.Sig",
                 "name": "sig",
                 "type": "tuple"
+            },
+            {
+                "internalType": "address",
+                "name": "_to",
+                "type": "address"
             }
         ],
         "name": "resolve_sell",
         "outputs": [],
         "stateMutability": "payable",
+        "type": "function"
+    },
+    {
+        "inputs": [
+            {
+                "internalType": "uint32[]",
+                "name": "chainIdList",
+                "type": "uint32[]"
+            },
+            {
+                "internalType": "address[]",
+                "name": "oracleFactoryList",
+                "type": "address[]"
+            }
+        ],
+        "name": "setOracleFactorys",
+        "outputs": [],
+        "stateMutability": "nonpayable",
+        "type": "function"
+    },
+    {
+        "inputs": [
+            {
+                "internalType": "address",
+                "name": "_owner",
+                "type": "address"
+            }
+        ],
+        "name": "setOwner",
+        "outputs": [],
+        "stateMutability": "nonpayable",
         "type": "function"
     },
     {

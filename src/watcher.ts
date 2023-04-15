@@ -19,9 +19,12 @@ import { IMongoCollection } from './db/collection';
 const ethers = require('ethers');
 
 export class Watcher {
+    private explorerBase = "https://explorer.hyperlane.xyz/message/";
+
     private ListSellEventName = "ListSell";
     private EscrowCreateEventName = "Escrow_Create";
     private EscrowDepositEventName = "EscrowDeposit";
+    private ResolveSellEventName = "ResolveSell";
 
     private db: {
         connection: mongoose.Connection
@@ -180,6 +183,7 @@ export class Watcher {
                     title: `New Listing ${newOTC.sellTokenName}`,
                     body:
                         `
+                    URL: ${this.explorerBase + eventValue.mailID}
                     Token: ${newOTC.sellTokenName}\n
                     Token Amount: ${newOTC.sellTokenAmount}\n
                     Price: ${newOTC.price}\n\n
@@ -191,6 +195,7 @@ export class Watcher {
                     title: `New Listing ${newOTC.sellTokenName}`,
                     body:
                         `
+                    URL: ${this.explorerBase + eventValue.mailID}
                     Token: ${newOTC.sellTokenName}\n
                     Token Amount: ${newOTC.sellTokenAmount}\n
                     Price: ${newOTC.price}\n\n
@@ -297,6 +302,7 @@ export class Watcher {
                 notification: {
                     title: `Your Asset is Solded!`,
                     body: `
+                  URL: ${this.explorerBase + eventValue.mailID}
                   Chain: ${this.chainID}\n
                   Buyer: ${eventValue.orderer}\n
                   `
@@ -304,6 +310,7 @@ export class Watcher {
                 payload: {
                     title: `Your Asset is Solded!`,
                     body: `
+                  URL: ${this.explorerBase + eventValue.mailID}
                   Chain: ${this.chainID}\n
                   Buyer: ${eventValue.orderer}\n
                   `,
