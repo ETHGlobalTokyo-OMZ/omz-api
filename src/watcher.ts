@@ -21,6 +21,7 @@ const ethers = require('ethers');
 export class Watcher {
     private ListSellEventName = "ListSell";
     private EscrowCreateEventName = "Escrow_Create";
+    private EscrowDepositEventName = "EscrowDeposit";
 
     private db: {
         connection: mongoose.Connection
@@ -106,6 +107,7 @@ export class Watcher {
             // event catch
             await this.getListSell(fromBlock, toBlock);
             await this.getEscrowCreateEvent(fromBlock, toBlock);
+            await this.getEscrowDepositEvent(fromBlock, toBlock);
 
             await this.db.collection.blockSync.findOneAndUpdate(
                 { chainID: this.chainID },
@@ -161,7 +163,7 @@ export class Watcher {
                 sellTokenName: sellToken.tokenName,
                 sellTokenAddress: sellToken.address,
                 sellTokenAmount: eventValue.order[3] / 10 ** sellToken.decimal,
-                price: eventValue.order[1] / 10 ** 18,
+                price: eventValue.order[1] / 10 ** 6,
                 collateralTokenName: collateralToken.tokenName,
                 collateralTokenAddress: collateralToken.address,
                 collateralTokenAmount: eventValue.order[5] / 10 ** collateralToken.decimal,
@@ -225,6 +227,8 @@ export class Watcher {
                 continue;
             }
 
+            console.log(pastEvents);
+
             const newEscrow = new db.collection.escrow({
                 tradeID: eventValue.tradeID,
                 chainID: this.chainID,
@@ -234,5 +238,48 @@ export class Watcher {
             await newEscrow.save();
         }
     }
+
+
+    private async getEscrowDepositEvent(fromBlock, toBlock) {
+        const pastEvents = await this.orderFactoryContract.getPastEvents(this.EscrowDepositEventName, {
+            fromBlock: fromBlock,
+            toBlock: toBlock
+        });
+
+        if (pastEvents.length === 0) {
+            return;
+        }
+
+        const db = await defineCollection();
+
+        for (const pastEvent of pastEvents) {
+            const eventValue = pastEvent.returnValues;
+
+            if (!eventValue) {
+                continue;
+            }
+
+            const escrow = await db.collection.escrow.findOne({
+                chainId: this.chainID,
+                contractAddress: eventValue.escrowAddr
+            });
+
+            if (!escrow) {
+                continue;
+            }
+
+            await db.collection.otc.findOneAndUpdate(
+                { tradeID: escrow.tradeID },
+                {
+                    buyer: eventValue.orderer,
+                    buyChainID: this.chainID,
+                    expiredTimestamp: Date.now() / 1000 + 86400
+                }
+            )
+
+            // push protocol to seller
+        }
+    }
+
 
 }

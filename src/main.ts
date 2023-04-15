@@ -15,9 +15,9 @@ async function bootstrap() {
   await watcherGoerli.init(ChainIDEnums.GOERLI)
   watcherGoerli.run();
 
-  const watcherOGoerli = new Watcher();
-  await watcherOGoerli.init(ChainIDEnums.OGOERLI)
-  watcherOGoerli.run();
+  // const watcherOGoerli = new Watcher();
+  // await watcherOGoerli.init(ChainIDEnums.OGOERLI)
+  // watcherOGoerli.run();
 
   const app = await NestFactory.create(AppModule);
   app.useGlobalPipes(new ValidationPipe({
