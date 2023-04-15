@@ -73,7 +73,7 @@ export class Watcher {
     }
 
     public async run(): Promise<void> {
-        const runTask = cron.schedule('*/3 * * * * *', async () => { // every 3 sec
+        const runTask = cron.schedule('*/5 * * * * *', async () => { // every 3 sec
             await this.getEvents();
         }, {
             scheduled: false,
@@ -99,7 +99,7 @@ export class Watcher {
             return;
         }
 
-        for (let fromBlock = syncedBlock.lastBlockNumber + 1; fromBlock <= latestBlockNumber; fromBlock += 451) {
+        for (let fromBlock = syncedBlock.lastBlockNumber + 1; fromBlock <= latestBlockNumber; fromBlock = fromBlock + 451) {
             let toBlock = fromBlock + 450;
             if (toBlock >= latestBlockNumber) {
                 toBlock = latestBlockNumber;
@@ -109,9 +109,13 @@ export class Watcher {
 
             // event catch
             await this.getListSell(fromBlock, toBlock);
+            console.log(this.chainID, 1);
             await this.getEscrowCreateEvent(fromBlock, toBlock);
+            console.log(this.chainID, 2);
             await this.getEscrowDepositEvent(fromBlock, toBlock);
+            console.log(this.chainID, 3);
             await this.getResolveSell(fromBlock, toBlock);
+            console.log(this.chainID, 4);
 
             await this.db.collection.blockSync.findOneAndUpdate(
                 { chainID: this.chainID },
@@ -138,7 +142,6 @@ export class Watcher {
             if (!eventValue) {
                 continue;
             }
-            console.log(eventValue);
 
             // past Event insert in db
             const sellToken = getContractByContractAddress(this.chainID, eventValue.order[2]);
@@ -162,7 +165,7 @@ export class Watcher {
             const newOTC = new db.collection.otc({
                 tradeID: eventValue.tradeID,
                 chainID: this.chainID,
-                seller: eventValue.order[0],
+                seller: eventValue.seller,
                 sellerNonce: eventValue.nonce,
                 sellTokenName: sellToken.tokenName,
                 sellTokenAddress: sellToken.address,
@@ -233,8 +236,6 @@ export class Watcher {
                 continue;
             }
 
-            console.log(pastEvents);
-
             const newEscrow = new db.collection.escrow({
                 tradeID: eventValue.tradeID,
                 chainID: this.chainID,
@@ -294,7 +295,6 @@ export class Watcher {
             );
 
             // push protocol to seller
-
             await PushAPI.payloads.sendNotification({
                 senderType: 0,
                 signer: this.pushOwner,
@@ -303,7 +303,6 @@ export class Watcher {
                 notification: {
                     title: `Your Asset is Solded!`,
                     body: `
-                  URL: ${this.explorerBase + eventValue.mailID}
                   Chain: ${this.chainID}\n
                   Buyer: ${eventValue.orderer}\n
                   `
@@ -311,7 +310,6 @@ export class Watcher {
                 payload: {
                     title: `Your Asset is Solded!`,
                     body: `
-                  URL: ${this.explorerBase + eventValue.mailID}
                   Chain: ${this.chainID}\n
                   Buyer: ${eventValue.orderer}\n
                   `,
@@ -327,7 +325,7 @@ export class Watcher {
 
 
     private async getResolveSell(fromBlock, toBlock) {
-        const pastEvents = await this.orderFactoryContract.getPastEvents(this.ResolveSellEventName, {
+        const pastEvents = await this.sellerContract.getPastEvents(this.ResolveSellEventName, {
             fromBlock: fromBlock,
             toBlock: toBlock
         });
@@ -341,6 +339,8 @@ export class Watcher {
         for (const pastEvent of pastEvents) {
             const eventValue = pastEvent.returnValues;
 
+            console.log(eventValue);
+
             if (!eventValue) {
                 continue;
             }
@@ -350,10 +350,11 @@ export class Watcher {
                 sellerNonce: eventValue.nonce
             });
 
-
             if (!otc) {
                 continue;
             }
+
+            console.log(otc.buyer);
 
             // push protocol to seller
             await PushAPI.payloads.sendNotification({
