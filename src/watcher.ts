@@ -3,7 +3,7 @@ import mongoose from 'mongoose';
 import cron from 'node-cron';
 import {
     ChainIDEnums, ContractType, getContractByContractAddress,
-    getContractByContractType
+    getContractByContractType, OrderEnums
 } from 'omz-module';
 import Web3 from 'web3';
 import { AbiItem } from 'web3-utils';
@@ -260,11 +260,20 @@ export class Watcher {
             }
 
             const escrow = await db.collection.escrow.findOne({
-                chainId: this.chainID,
+                chainID: this.chainID,
                 contractAddress: eventValue.escrowAddr
             });
 
             if (!escrow) {
+                continue;
+            }
+
+            const otc = await db.collection.otc.findOne(
+                { tradeID: escrow.tradeID }
+            );
+
+
+            if (!otc) {
                 continue;
             }
 
@@ -273,11 +282,38 @@ export class Watcher {
                 {
                     buyer: eventValue.orderer,
                     buyChainID: this.chainID,
-                    expiredTimestamp: Date.now() / 1000 + 86400
+                    expiredTimestamp: Math.floor(Date.now() / 1000) + 86400,
+                    status: OrderEnums.PROGRESS
                 }
-            )
+            );
 
             // push protocol to seller
+
+            await PushAPI.payloads.sendNotification({
+                senderType: 0,
+                signer: this.pushOwner,
+                type: 3, // target
+                identityType: 0, // Minimal payload
+                notification: {
+                    title: `Your Asset is Solded!`,
+                    body: `
+                  Chain: ${this.chainID}\n
+                  Buyer: ${eventValue.orderer}\n
+                  `
+                },
+                payload: {
+                    title: `Your Asset is Solded!`,
+                    body: `
+                  Chain: ${this.chainID}\n
+                  Buyer: ${eventValue.orderer}\n
+                  `,
+                    cta: '',
+                    img: ''
+                },
+                recipients: `eip155:5:${otc.seller}`, // recipient address
+                channel: 'eip155:5:0x966c2443cebcC21A94047e2cF4Ff6DB1fCa897fE', // your channel address
+                env: ENV.STAGING
+            });
         }
     }
 
