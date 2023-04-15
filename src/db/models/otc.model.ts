@@ -2,7 +2,7 @@ import { Schema } from 'mongoose';
 import { ChainIDEnums, OrderEnums } from 'omz-module';
 
 interface IOTC {
-    id: string;
+    tradeID: string;
     chainID: ChainIDEnums
 
     seller: string;
@@ -17,13 +17,12 @@ interface IOTC {
     collateralTokenAmount: number;
 
     listingTimestamp: number;
-    escrowContractAddress: string;
 
     status: OrderEnums;
 }
 
 const OTCSchema = new Schema<IOTC>({
-    id: { type: String, required: true },
+    tradeID: { type: String, required: true },
     chainID: { type: Number, required: true },
 
     seller: { type: String, required: true },
@@ -39,7 +38,6 @@ const OTCSchema = new Schema<IOTC>({
 
     listingTimestamp: { type: Number, require: true },
 
-    escrowContractAddress: { type: String },
     status: { type: Number, required: true },
 })
 

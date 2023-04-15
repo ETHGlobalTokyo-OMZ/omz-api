@@ -140,7 +140,7 @@ export class SellerWatcher {
             }
 
             const newOTC = new db.collection.otc({
-                id: eventValue.tradeID,
+                tradeID: eventValue.tradeID,
                 chainID: this.chainID,
                 seller: eventValue.order[0],
                 sellTokenName: sellToken.tokenName,

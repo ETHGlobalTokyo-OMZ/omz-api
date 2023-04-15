@@ -109,11 +109,12 @@ export class EscrowWatcher {
                 continue;
             }
 
-            // merge exist otc
-            await db.collection.otc.findOneAndUpdate(
-                { id: eventValue.tradeID },
-                { escrowContractAddress: eventValue.escrow }
-            );
+            const newEscrow = new db.collection.escrow({
+                tradeID: eventValue.tradeID,
+                contractAddress: eventValue.escrow
+            });
+
+            await newEscrow.save();
         }
     }
 

@@ -3,6 +3,7 @@ import mongoose, { model } from 'mongoose';
 
 import { IMongoCollection } from './collection';
 import { BlockSyncSchema, IBlockSync } from './models/block-sync.model';
+import { EscrowSchema, IEscrow } from './models/escrow.model';
 import { IOTC, OTCSchema } from './models/otc.model';
 
 async function createConnection(): Promise<mongoose.Connection> {
@@ -36,10 +37,12 @@ async function defineCollection(): Promise<{
 
   const OTCModel = model<IOTC>('OTC', OTCSchema, 'OTC', { connection });
   const BlockSyncModel = model<IBlockSync>('BlockSync', BlockSyncSchema, 'BlockSync', { connection });
+  const EscrowModel = model<IEscrow>('Escrow', EscrowSchema, 'Escrow', { connection });
 
   const collection: IMongoCollection = {
     otc: OTCModel,
     blockSync: BlockSyncModel,
+    escrow: EscrowModel
   }
 
   return { connection, collection };
