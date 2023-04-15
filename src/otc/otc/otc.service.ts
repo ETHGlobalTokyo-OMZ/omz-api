@@ -10,9 +10,13 @@ export class OtcService {
         const db = await defineCollection();
         const resDTO = new GetOTCListResDTO(HttpStatus.OK);
 
+        let matchObj: Object = {};
+        reqDTO.tokenName === '' ? matchObj : matchObj['sellTokenName'] = reqDTO.tokenName;
+        reqDTO.seller === '' ? matchObj : matchObj['seller'] = reqDTO.seller;
+        reqDTO.buyer === '' ? matchObj : matchObj['buyer'] = reqDTO.buyer;
 
         let otcList;
-        reqDTO.tokenName === ''
+        Object.keys(matchObj).length === 0
             ? otcList = await db.collection.otc.aggregate([
                 {
                     $lookup: {
@@ -22,11 +26,10 @@ export class OtcService {
                         as: 'escrow'
                     },
                 },
-                { $unwind: '$escrow' }
             ])
             : otcList = await db.collection.otc.aggregate([
                 {
-                    $match: { sellTokenName: reqDTO.tokenName }
+                    $match: matchObj
                 },
                 {
                     $lookup: {
