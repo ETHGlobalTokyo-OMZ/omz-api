@@ -2,7 +2,8 @@ import config, { IConfig } from 'config';
 import mongoose from 'mongoose';
 import cron from 'node-cron';
 import {
-    ChainIDEnums, getContractByContractAddress, IContract
+    ChainIDEnums, ContractType, getContractByContractAddress,
+    getContractByContractType
 } from 'omz-module';
 import Web3 from 'web3';
 import { AbiItem } from 'web3-utils';
@@ -10,14 +11,16 @@ import { AbiItem } from 'web3-utils';
 import * as PushAPI from '@pushprotocol/restapi';
 import { ENV } from '@pushprotocol/restapi/src/lib/constants';
 
+import orderFactoryABI from './abis/order-factory.abi.json';
 import sellerABI from './abis/seller.abi.json';
 import { defineCollection } from './db';
 import { IMongoCollection } from './db/collection';
 
 const ethers = require('ethers');
 
-export class SellerWatcher {
+export class Watcher {
     private ListSellEventName = "ListSell";
+    private EscrowCreateEventName = "Escrow_Create";
 
     private db: {
         connection: mongoose.Connection
@@ -25,15 +28,24 @@ export class SellerWatcher {
     };
     private chainID: ChainIDEnums;
     private web3;
-    private sellerContract
+    private sellerContract;
+    private orderFactoryContract;
 
     private pushOwner;
 
     constructor() { }
 
-    public async init(chainID: ChainIDEnums, sellerContract: IContract | null): Promise<void> {
-        if (!sellerContract) {
+    public async init(chainID: ChainIDEnums): Promise<void> {
+
+        const sellerVault = getContractByContractType(chainID, ContractType.SELLER_VAULT);
+        if (!sellerVault) {
             console.log("sellerAddress is null");
+            return;
+        }
+
+        const orderFactory = getContractByContractType(chainID, ContractType.ORDER_FACTORY);
+        if (!orderFactory) {
+            console.log("orderFactory is null");
             return;
         }
 
@@ -49,7 +61,8 @@ export class SellerWatcher {
         }
 
         this.web3 = new Web3(syncedBlock.nodeURI);
-        this.sellerContract = new this.web3.eth.Contract(sellerABI as AbiItem[], sellerContract.address);
+        this.sellerContract = new this.web3.eth.Contract(sellerABI as AbiItem[], sellerVault.address);
+        this.orderFactoryContract = new this.web3.eth.Contract(orderFactoryABI as AbiItem[], orderFactory.address);
 
         const pushConfig = config.get<IConfig>('Push');
         this.pushOwner = new ethers.Wallet(pushConfig.get('pk'));
@@ -88,10 +101,11 @@ export class SellerWatcher {
                 toBlock = latestBlockNumber;
             }
 
-            console.log(`Seller Sync Block ${fromBlock} ~ ${toBlock}`);
+            console.log(`ChainID: ${this.chainID}, Sync Block ${fromBlock} ~ ${toBlock}`);
 
             // event catch
             await this.getListSell(fromBlock, toBlock);
+            await this.getEscrowCreateEvent(fromBlock, toBlock);
 
             await this.db.collection.blockSync.findOneAndUpdate(
                 { chainID: this.chainID },
@@ -189,6 +203,35 @@ export class SellerWatcher {
             });
 
             await newOTC.save();
+        }
+    }
+
+    private async getEscrowCreateEvent(fromBlock, toBlock) {
+        const pastEvents = await this.orderFactoryContract.getPastEvents(this.EscrowCreateEventName, {
+            fromBlock: fromBlock,
+            toBlock: toBlock
+        });
+
+        if (pastEvents.length === 0) {
+            return;
+        }
+
+        const db = await defineCollection();
+
+        for (const pastEvent of pastEvents) {
+            const eventValue = pastEvent.returnValues;
+
+            if (!eventValue) {
+                continue;
+            }
+
+            const newEscrow = new db.collection.escrow({
+                tradeID: eventValue.tradeID,
+                chainID: this.chainID,
+                contractAddress: eventValue.escrow
+            });
+
+            await newEscrow.save();
         }
     }
 

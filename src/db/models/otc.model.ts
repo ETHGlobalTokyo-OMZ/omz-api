@@ -19,6 +19,10 @@ interface IOTC {
 
     listingTimestamp: number;
 
+    buyer: string;
+    buyerChainID: number;
+    expiredTimestamp: number;
+
     status: OrderEnums;
 }
 
@@ -39,6 +43,10 @@ const OTCSchema = new Schema<IOTC>({
     collateralTokenAmount: { type: Number, required: true },
 
     listingTimestamp: { type: Number, require: true },
+
+    buyer: { type: String },
+    buyerChainID: { type: Number },
+    expiredTimestamp: { type: Number },
 
     status: { type: Number, required: true },
 })

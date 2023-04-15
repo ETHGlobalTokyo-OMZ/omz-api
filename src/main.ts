@@ -1,22 +1,23 @@
-import {
-  ChainIDEnums, ContractType, getContractByContractType
-} from 'omz-module';
+import { ChainIDEnums } from 'omz-module';
 
 import { ValidationPipe } from '@nestjs/common';
 import { NestFactory } from '@nestjs/core';
 
 import { AppModule } from './app.module';
-import { EscrowWatcher } from './escrow-watcher';
-import { SellerWatcher } from './seller-watcher';
+import { Watcher } from './watcher';
 
 async function bootstrap() {
-  const watcher = new SellerWatcher();
-  await watcher.init(ChainIDEnums.MUMBAI, getContractByContractType(ChainIDEnums.MUMBAI, ContractType.SELLER_VAULT))
-  watcher.run();
+  const watcherMumbai = new Watcher();
+  await watcherMumbai.init(ChainIDEnums.MUMBAI)
+  watcherMumbai.run();
 
-  const escrow = new EscrowWatcher();
-  await escrow.init();
-  escrow.run();
+  const watcherGoerli = new Watcher();
+  await watcherGoerli.init(ChainIDEnums.GOERLI)
+  watcherGoerli.run();
+
+  const watcherOGoerli = new Watcher();
+  await watcherOGoerli.init(ChainIDEnums.OGOERLI)
+  watcherOGoerli.run();
 
   const app = await NestFactory.create(AppModule);
   app.useGlobalPipes(new ValidationPipe({
@@ -32,4 +33,5 @@ async function bootstrap() {
 
   await app.listen(10140);
 }
+
 bootstrap();

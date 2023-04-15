@@ -36,7 +36,6 @@ export class OtcService {
                         as: 'escrow'
                     },
                 },
-                { $unwind: '$escrow' }
             ]);
 
 
