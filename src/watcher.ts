@@ -111,6 +111,7 @@ export class Watcher {
             await this.getListSell(fromBlock, toBlock);
             await this.getEscrowCreateEvent(fromBlock, toBlock);
             await this.getEscrowDepositEvent(fromBlock, toBlock);
+            await this.getResolveSell(fromBlock, toBlock);
 
             await this.db.collection.blockSync.findOneAndUpdate(
                 { chainID: this.chainID },
@@ -325,4 +326,59 @@ export class Watcher {
     }
 
 
+    private async getResolveSell(fromBlock, toBlock) {
+        const pastEvents = await this.orderFactoryContract.getPastEvents(this.ResolveSellEventName, {
+            fromBlock: fromBlock,
+            toBlock: toBlock
+        });
+
+        if (pastEvents.length === 0) {
+            return;
+        }
+
+        const db = await defineCollection();
+
+        for (const pastEvent of pastEvents) {
+            const eventValue = pastEvent.returnValues;
+
+            if (!eventValue) {
+                continue;
+            }
+
+            const otc = await db.collection.otc.findOne({
+                seller: eventValue.seller,
+                sellerNonce: eventValue.nonce
+            });
+
+
+            if (!otc) {
+                continue;
+            }
+
+            // push protocol to seller
+            await PushAPI.payloads.sendNotification({
+                senderType: 0,
+                signer: this.pushOwner,
+                type: 3, // target
+                identityType: 0, // Minimal payload
+                notification: {
+                    title: `Seller Deposited!`,
+                    body: `
+                  URL: ${this.explorerBase + eventValue.mailID}
+                  `
+                },
+                payload: {
+                    title: `Seller Deposited!`,
+                    body: `
+                  URL: ${this.explorerBase + eventValue.mailID}
+                  `,
+                    cta: '',
+                    img: ''
+                },
+                recipients: `eip155:5:${otc.buyer}`, // recipient address
+                channel: 'eip155:5:0x966c2443cebcC21A94047e2cF4Ff6DB1fCa897fE', // your channel address
+                env: ENV.STAGING
+            });
+        }
+    }
 }
