@@ -10,10 +10,35 @@ export class OtcService {
         const db = await defineCollection();
         const resDTO = new GetOTCListResDTO(HttpStatus.OK);
 
-        let findObj = {}
-        reqDTO.tokenName === '' ? findObj : findObj = { sellTokenName: reqDTO.tokenName };
 
-        const otcList = await db.collection.otc.find(findObj);
+        let otcList;
+        reqDTO.tokenName === ''
+            ? otcList = await db.collection.otc.aggregate([
+                {
+                    $lookup: {
+                        from: 'Escrow',
+                        localField: 'tradeID',
+                        foreignField: 'tradeID',
+                        as: 'escrow'
+                    },
+                },
+                { $unwind: '$escrow' }
+            ])
+            : otcList = await db.collection.otc.aggregate([
+                {
+                    $match: { sellTokenName: reqDTO.tokenName }
+                },
+                {
+                    $lookup: {
+                        from: 'Escrow',
+                        localField: 'tradeID',
+                        foreignField: 'tradeID',
+                        as: 'escrow'
+                    },
+                },
+                { $unwind: '$escrow' }
+            ]);
+
 
         resDTO.lists = otcList;
 
